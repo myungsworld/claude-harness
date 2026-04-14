@@ -1,0 +1,44 @@
+# lefthook.yml — claude-harness repo hooks
+# Dogfooding: this repo uses the same hook patterns it distributes.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config templates/common/.gitleaks.toml --verbose
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: |
+        MSG_FILE="{1}"
+        # Strip Co-Authored-By: Claude lines (cross-platform)
+        if sed --version 2>/dev/null | grep -q GNU; then
+          sed -i '/^Co-Authored-By:.*[Cc]laude/d' "$MSG_FILE"
+        else
+          sed -i '' '/^Co-Authored-By:.*[Cc]laude/d' "$MSG_FILE"
+        fi
+        # Validate Conventional Commits (skip merges)
+        FIRST_LINE=$(grep -v '^#' "$MSG_FILE" | head -1)
+        if echo "$FIRST_LINE" | grep -qE '^(Merge|Revert)'; then
+          exit 0
+        fi
+        if ! echo "$FIRST_LINE" | grep -qE '^(feat|fix|docs|chore|refactor|test|ci|perf|build|style)(\([a-z0-9_/-]+\))?!?: .+'; then
+          echo "Commit message must follow Conventional Commits: type(scope): description"
+          echo "Got: $FIRST_LINE"
+          exit 1
+        fi
+
+pre-push:
+  commands:
+    lint-scripts:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        for f in hooks/*.sh scripts/*.sh; do
+          bash -n "$f" || exit 1
+        done
