@@ -1,0 +1,26 @@
+# .gitleaks.toml — Secret detection rules for gitleaks
+# Managed by claude-harness. Customize by adding rules below.
+# Base: gitleaks default ruleset (AWS, GCP, GitHub tokens, etc.)
+# Custom rules: add project-specific patterns in [rules] sections.
+
+title = "claude-harness gitleaks config"
+
+[allowlist]
+  description = "Global allowlist"
+  paths = [
+    '''(^|/)\.gitleaks\.toml$''',
+    '''(^|/)vendor/''',
+    '''(^|/)node_modules/''',
+    '''(^|/)\.git/''',
+    '''.*_test\.go$''',
+    '''.*\.test\.(ts|js|tsx|jsx)$''',
+    '''.*test_.*\.py$''',
+    '''.*_test\.dart$''',
+  ]
+
+# ── Example custom rule (uncomment and adapt) ─────────────
+# [[rules]]
+#   id = "my-api-key-pattern"
+#   description = "My service API key"
+#   regex = '''MY_SERVICE_KEY_[a-zA-Z0-9]{32}'''
+#   tags = ["key", "custom"]

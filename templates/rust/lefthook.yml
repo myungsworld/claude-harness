@@ -1,0 +1,33 @@
+# lefthook.yml — Rust project hooks
+# Managed by claude-harness.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config .gitleaks.toml --verbose
+    rustfmt:
+      tags: format
+      glob: "*.rs"
+      run: |
+        exec </dev/null
+        cargo fmt -- --check
+
+pre-push:
+  commands:
+    clippy:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        cargo clippy -- -D warnings
+    cargo-test:
+      tags: test
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        cargo test --workspace

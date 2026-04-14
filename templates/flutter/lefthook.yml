@@ -1,0 +1,41 @@
+# lefthook.yml — Flutter project hooks
+# Managed by claude-harness.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config .gitleaks.toml --verbose
+    dart-format:
+      tags: format
+      glob: "*.dart"
+      run: |
+        exec </dev/null
+        dart format --set-exit-if-changed {staged_files}
+
+pre-push:
+  commands:
+    flutter-analyze:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        flutter analyze --no-fatal-infos
+    flutter-test-selective:
+      tags: test
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        CHANGED=$(git diff --name-only --diff-filter=d origin/{{BASE_BRANCH}}...HEAD -- 'lib/**/*.dart')
+        if [ -n "$CHANGED" ]; then
+          for f in $CHANGED; do
+            TEST_FILE=$(echo "$f" | sed 's|^lib/|test/|;s|\.dart$|_test.dart|')
+            [ -f "$TEST_FILE" ] && flutter test "$TEST_FILE"
+          done
+        else
+          echo "No Dart changes — skipping tests"
+        fi

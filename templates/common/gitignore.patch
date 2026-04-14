@@ -1,0 +1,6 @@
+# claude-harness managed entries
+.env
+.env.*
+!.env.example
+.claude/state/
+*.bak.*

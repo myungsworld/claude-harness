@@ -1,0 +1,30 @@
+# AGENTS.md — {{PROJECT_NAME}}
+
+> AI collaboration guide. Created: {{TODAY}} by claude-harness.
+
+## Project
+
+- **Type**: Node/TypeScript
+- **Base branch**: {{BASE_BRANCH}}
+
+## Conventions
+
+- Async: always await promises, no floating promises
+- Imports: ESM (`import/export`), not CommonJS (`require`)
+- Testing: Jest with selective test execution
+- Formatting: Prettier (if configured)
+- Linting: ESLint with `--max-warnings 0`
+
+## Commands
+
+```bash
+npx jest --findRelatedTests <files>  # Selective test
+npx eslint --max-warnings 0 .       # Lint
+```
+
+## Git Workflow
+
+- Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`
+- Commit style: Conventional Commits
+- Pre-commit: gitleaks
+- Pre-push: eslint + jest (selective)

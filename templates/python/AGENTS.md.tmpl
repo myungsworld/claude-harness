@@ -1,0 +1,24 @@
+# AGENTS.md — {{PROJECT_NAME}}
+
+> AI collaboration guide. Created: {{TODAY}} by claude-harness.
+
+## Project
+
+- **Type**: Python
+- **Base branch**: {{BASE_BRANCH}}
+
+## Conventions
+
+- Type hints: required on all public functions
+- Linting: `ruff check .`
+- Formatting: `ruff format .`
+- Type checking: `mypy .`
+- Testing: `pytest` with selective execution
+
+## Commands
+
+```bash
+python -m pytest                # Run all tests
+ruff check . && mypy .          # Lint + typecheck
+ruff format .                   # Format
+```

@@ -1,0 +1,33 @@
+# lefthook.yml — Go project hooks
+# Managed by claude-harness. Customize as needed.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config .gitleaks.toml --verbose
+    gofmt:
+      tags: format
+      glob: "*.go"
+      run: |
+        exec </dev/null
+        gofmt -l {staged_files} | grep . && echo "Run: gofmt -w ." && exit 1 || exit 0
+
+pre-push:
+  commands:
+    govet:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        go vet ./...
+    gotest:
+      tags: test
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        go test -race -count=1 -timeout 60s ./...

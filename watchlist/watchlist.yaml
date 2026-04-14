@@ -1,0 +1,92 @@
+# watchlist.yaml — External & Internal Watch Sources
+#
+# The self-improvement engine checks these sources on a schedule.
+# On session start, overdue sources are automatically checked.
+# Changes are proposed via watchlist/proposals/ — never auto-applied.
+#
+# Source types:
+#   web             — WebSearch + WebFetch against URLs
+#   github-release  — GitHub Releases API (latest release)
+#   npm             — npm registry (latest version + changelog)
+#   pypi            — PyPI JSON API
+#   crates          — crates.io API
+#   pub             — pub.dev API
+#   internal        — Local signal scan (audit logs, session summaries)
+
+defaults:
+  interval_days: 14
+  notify: prompt        # prompt = ask user | silent = log only | pr = create PR
+  auto_apply: false     # NEVER set to true in production
+
+sources:
+  # ── External: AI Tooling ────────────────────────────
+  - id: claude-code-docs
+    name: "Claude Code Official Docs"
+    type: web
+    urls:
+      - "https://docs.anthropic.com/en/docs/claude-code"
+      - "https://docs.anthropic.com/en/docs/claude-code/hooks"
+    focus:
+      - "hooks API changes"
+      - "new tool types"
+      - "MCP protocol updates"
+      - "scheduled tasks changes"
+    affects:
+      - "hooks/*"
+      - "scripts/install.sh"
+    interval_days: 7
+    last_checked: null
+
+  # ── External: Git Hooks Tooling ─────────────────────
+  - id: lefthook-releases
+    name: "Lefthook Releases"
+    type: github-release
+    repo: "evilmartians/lefthook"
+    focus:
+      - "breaking config changes"
+      - "new hook stages"
+      - "deprecations"
+    affects:
+      - "templates/*/lefthook.yml"
+      - "scripts/bootstrap.sh"
+    interval_days: 21
+    last_checked: null
+
+  # ── External: Secret Scanner ────────────────────────
+  - id: gitleaks-releases
+    name: "Gitleaks Releases"
+    type: github-release
+    repo: "gitleaks/gitleaks"
+    focus:
+      - "new default rules that overlap custom rules"
+      - "config format changes"
+      - "performance improvements"
+    affects:
+      - "templates/common/.gitleaks.toml"
+    interval_days: 21
+    last_checked: null
+
+  # ── Internal: Usage Patterns ────────────────────────
+  - id: internal-usage
+    name: "Command & Hook Usage Patterns"
+    type: internal
+    scan:
+      - "~/.claude/audit-logs/*.jsonl"
+      - "watchlist/state/signals.jsonl"
+    triggers:
+      unused_command_days: 30
+      repeated_warning_count: 10
+      drift_project_threshold: 3
+    affects:
+      - "commands/harness/*.md"
+      - "hooks/*.sh"
+    interval_days: 7
+    last_checked: null
+
+# ── Schedule Configuration ─────────────────────────────
+# Controls automatic execution between sessions (Remote Trigger).
+# Set enabled: false to disable, or adjust cron for different frequency.
+schedule:
+  enabled: false          # Set to true after install.sh runs with --schedule
+  trigger_id: null        # Populated by install.sh when Remote Trigger is created
+  cron: "0 9 */14 * *"   # Every 14 days at 9am (customizable)

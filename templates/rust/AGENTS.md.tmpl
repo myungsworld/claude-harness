@@ -1,0 +1,23 @@
+# AGENTS.md — {{PROJECT_NAME}}
+
+> AI collaboration guide. Created: {{TODAY}} by claude-harness.
+
+## Project
+
+- **Type**: Rust
+- **Base branch**: {{BASE_BRANCH}}
+
+## Conventions
+
+- Error handling: `thiserror` for libraries, `anyhow` for applications
+- Unsafe: prohibited unless explicitly approved
+- Formatting: `cargo fmt` (enforced by pre-commit)
+- Linting: `cargo clippy -- -D warnings`
+
+## Commands
+
+```bash
+cargo test --workspace       # Run tests
+cargo clippy -- -D warnings  # Lint
+cargo fmt -- --check         # Format check
+```

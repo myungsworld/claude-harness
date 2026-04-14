@@ -1,0 +1,39 @@
+# lefthook.yml — Python project hooks
+# Managed by claude-harness.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config .gitleaks.toml --verbose
+
+pre-push:
+  commands:
+    ruff:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        ruff check .
+    mypy:
+      tags: typecheck
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        mypy .
+    pytest-selective:
+      tags: test
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        CHANGED=$(git diff --name-only --diff-filter=d origin/{{BASE_BRANCH}}...HEAD -- '*.py')
+        if [ -n "$CHANGED" ]; then
+          python -m pytest $CHANGED --timeout=60 -q
+        else
+          echo "No Python changes — skipping tests"
+        fi

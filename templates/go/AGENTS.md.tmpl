@@ -1,0 +1,31 @@
+# AGENTS.md — {{PROJECT_NAME}}
+
+> AI collaboration guide. Created: {{TODAY}} by claude-harness.
+
+## Project
+
+- **Type**: Go
+- **Base branch**: {{BASE_BRANCH}}
+
+## Conventions
+
+- Error handling: always check returned error, no blank identifier `_`
+- Context: pass `context.Context` as first parameter
+- Testing: table-driven tests preferred
+- Formatting: `gofmt` (enforced by pre-commit hook)
+- Linting: `golangci-lint run ./...`
+
+## Commands
+
+```bash
+go test ./... -race -count=1    # Run tests
+go vet ./...                     # Static analysis
+golangci-lint run ./...          # Lint
+```
+
+## Git Workflow
+
+- Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`
+- Commit style: Conventional Commits
+- Pre-commit: gitleaks + gofmt
+- Pre-push: go vet + go test

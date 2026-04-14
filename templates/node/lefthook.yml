@@ -1,0 +1,33 @@
+# lefthook.yml — Node/TypeScript project hooks
+# Managed by claude-harness. Customize as needed.
+
+pre-commit:
+  commands:
+    gitleaks:
+      tags: security
+      run: |
+        exec </dev/null
+        gitleaks protect --staged --config .gitleaks.toml --verbose
+
+pre-push:
+  commands:
+    eslint:
+      tags: lint
+      env:
+        CI: "1"
+      run: |
+        exec </dev/null
+        npx --no-install eslint --max-warnings 0 .
+    jest-selective:
+      tags: test
+      env:
+        CI: "1"
+        CI_HOOK: "1"
+      run: |
+        exec </dev/null
+        CHANGED=$(git diff --name-only --diff-filter=d origin/{{BASE_BRANCH}}...HEAD -- 'src/**/*.ts' 'src/**/*.tsx' 'src/**/*.js' 'src/**/*.jsx' 'lib/**/*.ts' 'lib/**/*.js')
+        if [ -n "$CHANGED" ]; then
+          npx --no-install jest --findRelatedTests $CHANGED --passWithNoTests
+        else
+          echo "No source changes — skipping tests"
+        fi
