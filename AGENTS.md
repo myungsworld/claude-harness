@@ -18,32 +18,43 @@ External signals (web docs, releases)  ──┐
 Internal signals (usage, drift, errors) ──┘
 ```
 
-## 2. Commands
+## 2. CLI
+
+After `make install`, the `harness` CLI is available at `~/.claude-harness/bin/harness`.
 
 ```bash
-# Apply templates to a new project
-./scripts/bootstrap.sh --type {go|node|python|rust|flutter} --base {develop|main|master} [PROJECT_PATH]
-
-# Check compliance of an existing project
-./scripts/audit.sh [PROJECT_PATH]
-
-# Install globally (hooks + commands + agents)
-./scripts/install.sh
-
-# Validate templates (dry-run)
-./scripts/bootstrap.sh --type go --base develop --dry-run /tmp/test-project
+harness install              # Re-run global install
+harness bootstrap [args...]  # Apply templates to a project
+harness audit [DIR]          # Compliance audit
+harness status               # Dashboard for registered projects
+harness register [DIR]       # Register a project
+harness watch [--status]     # Check/show watch sources
+harness evolve [args...]     # Self-improvement engine (see below)
+harness update               # Pull latest + install + sync all
+harness version              # Show version
 ```
 
 Or via `make`:
 
 ```bash
 make help          # List all targets
-make install       # Global install
+make install       # Global install (includes CLI)
 make audit         # Audit current directory
 make regression    # Audit all registered projects
 make validate      # Dry-run all 5 stack templates
 make lint          # Bash syntax check
 make test          # lint + validate
+```
+
+### Slash commands (Claude Code)
+
+```
+/harness/evolve                    # Full self-improvement (internal + external)
+/harness/evolve --watch-only       # External sources only
+/harness/evolve --signals-only     # Internal patterns only
+/harness/evolve --list             # List pending proposals
+/harness/evolve --apply <id>       # Apply a proposal
+/harness/evolve --dismiss <id>     # Dismiss a proposal
 ```
 
 ## 3. Project Structure
@@ -90,6 +101,21 @@ Session-end hooks collect signals. When patterns emerge:
 | Hook warns N+ times same pattern | Recurring pain | Promote to rule |
 | Template drifts in 3+ projects | Drift hotspot | Template revision |
 | Manual fix repeated | Missing automation | New hook/skill candidate |
+
+### Evolve Command
+
+`/harness/evolve` orchestrates the full self-improvement cycle:
+
+1. **Internal analysis** (`evolve.sh --phase internal`) — scans signals.jsonl for
+   command usage, error patterns, template drift across registered projects
+2. **External watch** (`watch-check.sh --check`) — Claude uses WebSearch/WebFetch
+   to check overdue sources (docs, releases, security advisories)
+3. **Proposal generation** (`evolve.sh --phase propose`) — cross-references
+   internal + external findings into an actionable proposal
+4. **Human gate** — user reviews and chooses Apply / Defer / Dismiss
+
+Key architecture: WebSearch/WebFetch are Claude tools, not bash — so the slash
+command (`commands/harness/evolve.md`) instructs Claude on the 2-phase flow.
 
 ### Human Gate
 

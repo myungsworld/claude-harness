@@ -174,7 +174,22 @@ print(f'  {added} hook(s) added to settings.json')
   fi
 fi
 
-# ── 6. Create harness home config ────────────────────────
+# ── 6. Install CLI ───────────────────────────────────────
+CLI_SRC="${HARNESS_DIR}/scripts/harness-cli.sh"
+CLI_BIN_DIR="${HARNESS_HOME}/bin"
+CLI_DST="${CLI_BIN_DIR}/harness"
+
+if [ -f "$CLI_SRC" ]; then
+  mkdir -p "$CLI_BIN_DIR"
+  if [ -L "$CLI_DST" ] && [ "$(readlink "$CLI_DST")" = "$CLI_SRC" ]; then
+    _log "bin/harness (already linked)"
+  else
+    _dry "symlink bin/harness" || { rm -f "$CLI_DST"; ln -s "$CLI_SRC" "$CLI_DST"; }
+    _log "+ bin/harness -> harness-cli.sh"
+  fi
+fi
+
+# ── 7. Create harness home config ────────────────────────
 if [ ! -f "${HARNESS_HOME}/config" ]; then
   _dry "create ${HARNESS_HOME}/config" || cat > "${HARNESS_HOME}/config" <<CONFEOF
 # claude-harness scope configuration
@@ -185,16 +200,25 @@ CONFEOF
   _log "+ ${HARNESS_HOME}/config (edit to set scope)"
 fi
 
-# ── 7. Summary ────────────────────────────────────────────
+# ── 8. Summary ────────────────────────────────────────────
 echo ""
 echo "Installation complete!"
 echo ""
+echo "CLI:"
+if echo "$PATH" | tr ':' '\n' | grep -qxF "$CLI_BIN_DIR" 2>/dev/null; then
+  echo "  harness command is available"
+else
+  echo "  Add to your shell profile:  export PATH=\"${CLI_BIN_DIR}:\$PATH\""
+  echo "  Then run: harness help"
+fi
+echo ""
 echo "Next steps:"
 echo "  1. Edit ${HARNESS_HOME}/config to set SCOPE_PARENTS"
-echo "  2. Register projects: make register P=/path/to/project"
-echo "  3. Bootstrap a project: ./scripts/bootstrap.sh --type node /path/to/project"
+echo "  2. Register projects: harness register /path/to/project"
+echo "  3. Bootstrap a project: harness bootstrap --type node /path/to/project"
+echo "  4. Run self-improvement: /harness/evolve"
 echo ""
 echo "Watch system:"
 echo "  - Sources defined in: ${HARNESS_DIR}/watchlist/watchlist.yaml"
 echo "  - Auto-checks on session start for overdue sources"
-echo "  - Status: make watch-status"
+echo "  - Status: harness watch --status"

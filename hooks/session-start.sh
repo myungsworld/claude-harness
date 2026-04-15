@@ -104,8 +104,7 @@ if overdue:
     print(f'  Watch: {len(overdue)} source(s) overdue')
     for o in overdue:
         print(f'    - {o}')
-    print('  Claude should auto-check these sources using WebSearch/WebFetch.')
-    print('  After checking, update watchlist/snapshots/ and watchlist.yaml last_checked.')
+    print('  Run /harness/evolve to check sources and generate improvement proposals.')
 " 2>/dev/null)
 
   if [ -n "$OVERDUE" ]; then
