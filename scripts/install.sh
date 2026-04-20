@@ -189,6 +189,39 @@ if [ -f "$CLI_SRC" ]; then
   fi
 fi
 
+# ── 6b. Python venv for YAML parsing ─────────────────────
+VENV_DIR="${HARNESS_HOME}/venv"
+VENV_PY="${VENV_DIR}/bin/python3"
+
+if command -v python3 >/dev/null 2>&1; then
+  if [ ! -x "$VENV_PY" ]; then
+    if _dry "python3 -m venv ${VENV_DIR}"; then
+      :
+    else
+      if python3 -m venv "$VENV_DIR" >/dev/null 2>&1; then
+        _log "+ venv created at ${VENV_DIR}"
+      else
+        echo "  ! Failed to create venv at ${VENV_DIR} — watch-check.sh may not work"
+      fi
+    fi
+  fi
+
+  if [ -x "$VENV_PY" ] && ! "$VENV_PY" -c "import yaml" >/dev/null 2>&1; then
+    if _dry "pip install pyyaml into venv"; then
+      :
+    elif "$VENV_PY" -m pip install --quiet pyyaml >/dev/null 2>&1; then
+      _log "+ pyyaml installed in venv"
+    else
+      echo "  ! Failed to install pyyaml in venv"
+      echo "    Manual fix:  ${VENV_PY} -m pip install pyyaml"
+    fi
+  elif [ -x "$VENV_PY" ]; then
+    _log "venv pyyaml (ready)"
+  fi
+else
+  echo "  ! python3 not found — watch-check.sh will not work"
+fi
+
 # ── 7. Create harness home config ────────────────────────
 if [ ! -f "${HARNESS_HOME}/config" ]; then
   _dry "create ${HARNESS_HOME}/config" || cat > "${HARNESS_HOME}/config" <<CONFEOF
@@ -198,6 +231,45 @@ if [ ! -f "${HARNESS_HOME}/config" ]; then
 SCOPE_PARENTS=()
 CONFEOF
   _log "+ ${HARNESS_HOME}/config (edit to set scope)"
+fi
+
+# ── 7b. Seed user preferences (auto-memory) ──────────────
+# Writes a project-scoped memory so Claude Code remembers this user's
+# reply preferences when working in the harness. Idempotent: only writes
+# files that don't already exist.
+MEM_DIR="${CLAUDE_DIR}/projects/$(echo "$HARNESS_DIR" | sed 's|/|-|g')/memory"
+if _dry "seed memory at ${MEM_DIR}"; then
+  :
+else
+  mkdir -p "$MEM_DIR"
+  PREF_FILE="${MEM_DIR}/feedback_korean_replies.md"
+  if [ ! -f "$PREF_FILE" ]; then
+    cat > "$PREF_FILE" <<'PREF_EOF'
+---
+name: Reply in Korean, keep files in English
+description: User prefers Korean for conversational replies; md/code/commit content stays English
+type: feedback
+---
+
+When talking to the user in chat, reply in Korean.
+Files written to disk (markdown, code, commit messages, PR descriptions, cycle logs) stay in English unless the user asks otherwise.
+
+**Why:** User preference established during `/harness/evolve` cycle on 2026-04-20.
+
+**How to apply:**
+- Conversational/summary text to the user → Korean.
+- File contents (cycle logs, snapshots, AGENTS.md, code, commit messages) → English, same as before.
+- Code references, tool names, flag names, paths stay in their original form inside Korean sentences.
+PREF_EOF
+    _log "+ memory/feedback_korean_replies.md"
+  fi
+
+  MEM_INDEX="${MEM_DIR}/MEMORY.md"
+  [ ! -f "$MEM_INDEX" ] && : > "$MEM_INDEX"
+  if ! grep -q "feedback_korean_replies.md" "$MEM_INDEX" 2>/dev/null; then
+    printf -- '- [Reply in Korean, keep files in English](feedback_korean_replies.md) — 대화는 한국어, 파일 내용은 영어 유지\n' >> "$MEM_INDEX"
+    _log "+ memory/MEMORY.md entry"
+  fi
 fi
 
 # ── 8. Summary ────────────────────────────────────────────

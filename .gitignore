@@ -1,0 +1,9 @@
+# Claude Code per-user state (permissions cache, local settings)
+.claude/
+
+# Ephemeral runtime signal / log accumulation
+# The directory itself is tracked via .gitkeep; the logs are not.
+watchlist/state/*.jsonl
+
+# macOS
+.DS_Store

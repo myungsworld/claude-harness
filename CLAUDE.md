@@ -12,7 +12,7 @@
 ### Watch System
 - Hooks auto-check overdue watch sources on session start
 - Snapshots stored in `watchlist/snapshots/` — never edit manually
-- Proposals in `watchlist/proposals/` — review before applying
+- Cycle logs in `watchlist/cycles/` — append-only, one file per `/harness/evolve` run
 
 ### Change Impact
 - Template changes affect all registered projects

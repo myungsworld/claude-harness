@@ -25,11 +25,10 @@ Manages multi-stack project templates, enforces quality gates via git hooks, and
               │                │                 │
               ▼                ▼                 ▼
        ┌─────────────────────────────────────────────┐
-       │              Proposals                       │
-       │  (never auto-applied — human gate always)    │
+       │        /harness/evolve cycle                 │
+       │  (conversational — findings reviewed one by  │
+       │   one; decisions: apply / defer / dismiss)   │
        └──────────────────┬──────────────────────────┘
-                          │
-                   [Apply] [Later] [Dismiss]
                           │
                           ▼
                  Updated harness → synced to all projects
@@ -88,31 +87,21 @@ Register sources in `watchlist/watchlist.yaml`:
 sources:
   - id: claude-code-docs
     type: web
-    urls: ["https://docs.anthropic.com/en/docs/claude-code"]
+    urls: ["https://code.claude.com/docs"]
     focus: ["hooks API changes", "new tools"]
     affects: ["hooks/*"]
     interval_days: 7
 ```
 
-On every session start, overdue sources are automatically checked via WebSearch/WebFetch. Changes produce proposals in `watchlist/proposals/`.
+Session start prints which sources are overdue. Run `/harness/evolve` to work through them in a conversation with Claude.
 
 ### Evolve System (Internal Signals)
 
-Session-end hooks silently collect:
-- Command/hook usage frequency
-- Error patterns
-- Template drift across projects
+Session-end hooks silently collect command/hook usage frequency, error patterns, and template drift across projects. `/harness/evolve` picks these up as findings during a cycle.
 
-When patterns emerge (unused commands, repeated warnings, cross-project drift), proposals are generated.
+### Human Gate (the evolve cycle)
 
-### Human Gate
-
-**Nothing is ever auto-applied.** Every proposal requires explicit user approval:
-
-```
-"lefthook v2.0 released — config structure changed"
-  [Apply]  [Later]  [Dismiss]
-```
+**Nothing is ever auto-applied.** `/harness/evolve` starts a conversation: Claude walks through each finding (one at a time), gives a recommendation, and the user decides `apply` / `defer` / `dismiss` in dialogue. When the conversation ends, a single log lands in `watchlist/cycles/<date>.md`. The next `/harness/evolve` starts fresh.
 
 ## Project Structure
 
@@ -127,14 +116,14 @@ claude-harness/
 │   ├── bootstrap.sh      # Template application
 │   ├── audit.sh          # Compliance check
 │   ├── watch-check.sh    # Watch execution
-│   └── snapshot-diff.sh  # Change detection + proposal gen
+│   └── snapshot-diff.sh  # Baseline + diff emission (consumed by /harness/evolve)
 ├── templates/
 │   ├── common/           # Shared (gitleaks, security rules, docs)
 │   └── {go,node,python,rust,flutter}/
 ├── watchlist/
 │   ├── watchlist.yaml    # Watch source registry
-│   ├── snapshots/        # Point-in-time snapshots
-│   ├── proposals/        # Generated improvement proposals
+│   ├── snapshots/        # Point-in-time snapshots (diff baselines)
+│   ├── cycles/           # Append-only evolve cycle logs
 │   └── state/            # Signal accumulation
 ├── AGENTS.md             # AI agent guide
 └── Makefile              # Common operations

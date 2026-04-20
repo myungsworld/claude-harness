@@ -104,23 +104,12 @@ if overdue:
     print(f'  Watch: {len(overdue)} source(s) overdue')
     for o in overdue:
         print(f'    - {o}')
-    print('  Run /harness/evolve to check sources and generate improvement proposals.')
+    print('  Run /harness/evolve to start a self-improvement cycle.')
 " 2>/dev/null)
 
   if [ -n "$OVERDUE" ]; then
     echo ""
     echo "$OVERDUE"
-  fi
-fi
-
-# ─── Pending proposals ───────────────────────────────────
-PROPOSALS_DIR="${HARNESS_ROOT:-}/watchlist/proposals"
-if [ -d "$PROPOSALS_DIR" ]; then
-  PENDING=$(find "$PROPOSALS_DIR" -name "*.md" -newer "$PROPOSALS_DIR/.gitkeep" 2>/dev/null | wc -l | tr -d ' ')
-  if [ "$PENDING" -gt 0 ]; then
-    echo ""
-    echo "  Proposals: ${PENDING} pending improvement(s) in watchlist/proposals/"
-    echo "  Review and choose: [Apply] [Later] [Dismiss]"
   fi
 fi
 

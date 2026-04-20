@@ -13,10 +13,9 @@ set -euo pipefail
 HARNESS_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 WATCHLIST="${HARNESS_DIR}/watchlist/watchlist.yaml"
 SNAPSHOTS="${HARNESS_DIR}/watchlist/snapshots"
-PROPOSALS="${HARNESS_DIR}/watchlist/proposals"
 WATCH_LOG="${HARNESS_DIR}/watchlist/state/watch-log.jsonl"
 
-mkdir -p "$SNAPSHOTS" "$PROPOSALS" "$(dirname "$WATCH_LOG")"
+mkdir -p "$SNAPSHOTS" "$(dirname "$WATCH_LOG")"
 
 if [ ! -f "$WATCHLIST" ]; then
   echo "No watchlist.yaml found at: $WATCHLIST"
@@ -28,12 +27,29 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
+# Prefer the harness-managed venv (install.sh creates it with PyYAML).
+# Falls back to system python3 with a clear error if PyYAML is missing.
+HARNESS_VENV_PY="${HOME}/.claude-harness/venv/bin/python3"
+if [ -x "$HARNESS_VENV_PY" ]; then
+  PY="$HARNESS_VENV_PY"
+else
+  PY="python3"
+  if ! "$PY" -c "import yaml" >/dev/null 2>&1; then
+    cat >&2 <<'PYERR'
+Error: PyYAML is not available to python3, and the harness venv is missing.
+Fix by running:   bash scripts/install.sh
+Or install manually:   python3 -m pip install --user --break-system-packages pyyaml
+PYERR
+    exit 2
+  fi
+fi
+
 ACTION="${1:---check}"
 TARGET_ID="${2:-}"
 
 # ── Status: show all sources ──────────────────────────────
 if [ "$ACTION" = "--status" ]; then
-  python3 -c "
+  "$PY" -c "
 import yaml
 from datetime import datetime, timedelta
 
@@ -80,7 +96,7 @@ fi
 
 # ── Update last_checked timestamp ─────────────────────────
 if [ "$ACTION" = "--update-checked" ] && [ -n "$TARGET_ID" ]; then
-  python3 -c "
+  "$PY" -c "
 import yaml
 from datetime import datetime
 
@@ -105,7 +121,7 @@ fi
 
 # ── Check: find overdue sources and output instructions ───
 if [ "$ACTION" = "--check" ] || [ "$ACTION" = "--id" ]; then
-  python3 -c "
+  "$PY" -c "
 import yaml, json, sys
 from datetime import datetime, timedelta
 

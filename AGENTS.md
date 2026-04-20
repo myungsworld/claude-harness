@@ -29,7 +29,7 @@ harness audit [DIR]          # Compliance audit
 harness status               # Dashboard for registered projects
 harness register [DIR]       # Register a project
 harness watch [--status]     # Check/show watch sources
-harness evolve [args...]     # Self-improvement engine (see below)
+harness evolve               # Show internal signal snapshot (cycle itself is driven by /harness/evolve)
 harness update               # Pull latest + install + sync all
 harness version              # Show version
 ```
@@ -49,13 +49,11 @@ make test          # lint + validate
 ### Slash commands (Claude Code)
 
 ```
-/harness/evolve                    # Full self-improvement (internal + external)
-/harness/evolve --watch-only       # External sources only
-/harness/evolve --signals-only     # Internal patterns only
-/harness/evolve --list             # List pending proposals
-/harness/evolve --apply <id>       # Apply a proposal
-/harness/evolve --dismiss <id>     # Dismiss a proposal
+/harness/evolve     # Conversational self-improvement cycle (no flags, no sub-commands)
 ```
+
+The cycle runs end-to-end in the conversation. Nothing persists in a "pending" state —
+when the conversation ends, the cycle ends. See `commands/harness/evolve.md`.
 
 ## 3. Project Structure
 
@@ -69,8 +67,8 @@ claude-harness/
 │   ├── go/ node/ python/ rust/ flutter/
 ├── watchlist/            # Self-improvement engine
 │   ├── watchlist.yaml    # Registered watch sources
-│   ├── snapshots/        # Point-in-time snapshots
-│   ├── proposals/        # Auto-generated improvement proposals
+│   ├── snapshots/        # Point-in-time snapshots (baselines for diffing)
+│   ├── cycles/           # Append-only cycle logs (one file per cycle)
 │   └── state/            # Internal signal accumulation
 ├── agents/               # Specialized sub-agents
 ├── skills/harness/       # Isolated execution skills
@@ -82,7 +80,8 @@ claude-harness/
 ### External Watch (ecosystem changes)
 
 `watchlist/watchlist.yaml` registers external sources (docs, releases, packages).
-Hooks automatically check overdue sources and propose harness updates.
+Session-start prints overdue sources as a hint to run `/harness/evolve`; the cycle
+checks them during the conversation.
 
 | Source Type | Method | Example |
 |-------------|--------|---------|
@@ -93,37 +92,34 @@ Hooks automatically check overdue sources and propose harness updates.
 
 ### Internal Evolve (usage patterns)
 
-Session-end hooks collect signals. When patterns emerge:
+Session-end hooks collect signals. `scripts/evolve.sh --phase internal` summarizes
+them for the cycle. Triggers Claude should watch for:
 
-| Signal | Trigger | Proposal |
-|--------|---------|----------|
-| Command unused 30d | Low utility | Deprecation candidate |
-| Hook warns N+ times same pattern | Recurring pain | Promote to rule |
-| Template drifts in 3+ projects | Drift hotspot | Template revision |
-| Manual fix repeated | Missing automation | New hook/skill candidate |
+| Signal | Finding type |
+|--------|--------------|
+| Command unused 30d | Deprecation candidate |
+| Hook warns N+ times same pattern | Promote to rule |
+| Template drifts in 3+ projects | Template revision |
+| Manual fix repeated | New hook/skill candidate |
 
 ### Evolve Command
 
-`/harness/evolve` orchestrates the full self-improvement cycle:
+`/harness/evolve` is a **conversational cycle** — Claude and the user review
+findings together and decide, in dialogue, whether to apply, defer, or dismiss
+each one. There is no persistent proposal file to Apply/Dismiss later.
 
-1. **Internal analysis** (`evolve.sh --phase internal`) — scans signals.jsonl for
-   command usage, error patterns, template drift across registered projects
-2. **External watch** (`watch-check.sh --check`) — Claude uses WebSearch/WebFetch
-   to check overdue sources (docs, releases, security advisories)
-3. **Proposal generation** (`evolve.sh --phase propose`) — cross-references
-   internal + external findings into an actionable proposal
-4. **Human gate** — user reviews and chooses Apply / Defer / Dismiss
-
-Key architecture: WebSearch/WebFetch are Claude tools, not bash — so the slash
-command (`commands/harness/evolve.md`) instructs Claude on the 2-phase flow.
+Five steps (detail in `commands/harness/evolve.md`):
+1. Watchlist coverage check — does the watchlist still cover what matters?
+2. Internal signals — scan via `evolve.sh --phase internal`
+3. External watch — Claude executes WebSearch/WebFetch + `watch-check.sh` for each source
+4. Review loop — findings presented individually, each decided in dialogue
+5. Cycle close — a single log written to `watchlist/cycles/<date>.md`
 
 ### Human Gate
 
-Proposals are **never auto-applied**. The user sees:
-```
-"lefthook v2.0 released — config structure changed"
-  [Apply]  [Later]  [Dismiss]
-```
+Nothing is ever auto-applied. Claude proposes and reasons; the user decides.
+Claude MUST NOT pre-decide `defer` on a finding because it "needs more data" —
+every finding is presented, every decision is the user's.
 
 ## 5. Code Style
 
@@ -143,7 +139,8 @@ Proposals are **never auto-applied**. The user sees:
 ### Always
 - Guarantee idempotency for all scripts
 - Create backup (`.bak.*`) before overwriting
-- Human gate on all proposals — never auto-mutate
+- Human gate on every evolve finding — never auto-mutate
+- When editing, refresh obsolete code in the same pass (no "append-only" growth)
 
 ### Ask first
 - Adding a new project type
@@ -151,6 +148,7 @@ Proposals are **never auto-applied**. The user sees:
 - Changing watch intervals or sources
 
 ### Never
-- Auto-apply proposals without user confirmation
+- Auto-apply evolve findings without user confirmation
+- Pre-decide `defer` on a finding on the user's behalf
 - Hardcode secrets or PII in templates
 - Skip the human gate under any circumstance

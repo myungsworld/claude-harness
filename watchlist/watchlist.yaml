@@ -1,8 +1,9 @@
 # watchlist.yaml — External & Internal Watch Sources
 #
 # The self-improvement engine checks these sources on a schedule.
-# On session start, overdue sources are automatically checked.
-# Changes are proposed via watchlist/proposals/ — never auto-applied.
+# On session start, overdue sources are flagged as a hint to run /harness/evolve.
+# During a cycle, each overdue source is reviewed in conversation — nothing
+# is auto-applied.
 #
 # Source types:
 #   web             — WebSearch + WebFetch against URLs
@@ -12,6 +13,10 @@
 #   crates          — crates.io API
 #   pub             — pub.dev API
 #   internal        — Local signal scan (audit logs, session summaries)
+#
+# KNOWN ISSUE: scripts/watch-check.sh --update-checked rewrites this file via
+# PyYAML dump, which strips the comments below. Logged as a carry-forward
+# finding in watchlist/cycles/2026-04-20.md (F6).
 
 defaults:
   interval_days: 14
@@ -24,18 +29,20 @@ sources:
     name: "Claude Code Official Docs"
     type: web
     urls:
-      - "https://docs.anthropic.com/en/docs/claude-code"
-      - "https://docs.anthropic.com/en/docs/claude-code/hooks"
+      - "https://code.claude.com/docs"
+      - "https://code.claude.com/docs/en/hooks"
     focus:
       - "hooks API changes"
+      - "new hook event types"
       - "new tool types"
       - "MCP protocol updates"
-      - "scheduled tasks changes"
+      - "scheduled tasks changes (Routines, /schedule, /loop)"
+      - "Remote Control / Channels / Dispatch surfaces"
     affects:
       - "hooks/*"
       - "scripts/install.sh"
     interval_days: 7
-    last_checked: null
+    last_checked: '2026-04-20T10:47:39'
 
   # ── External: Git Hooks Tooling ─────────────────────
   - id: lefthook-releases
@@ -50,7 +57,7 @@ sources:
       - "templates/*/lefthook.yml"
       - "scripts/bootstrap.sh"
     interval_days: 21
-    last_checked: null
+    last_checked: '2026-04-20T10:47:39'
 
   # ── External: Secret Scanner ────────────────────────
   - id: gitleaks-releases
@@ -64,7 +71,7 @@ sources:
     affects:
       - "templates/common/.gitleaks.toml"
     interval_days: 21
-    last_checked: null
+    last_checked: '2026-04-20T10:47:39'
 
   # ── Internal: Usage Patterns ────────────────────────
   - id: internal-usage
@@ -81,7 +88,7 @@ sources:
       - "commands/harness/*.md"
       - "hooks/*.sh"
     interval_days: 7
-    last_checked: null
+    last_checked: '2026-04-20T10:47:39'
 
 # ── Schedule Configuration ─────────────────────────────
 # Controls automatic execution between sessions (Remote Trigger).

@@ -11,7 +11,7 @@
 #   status               Show dashboard for all registered projects
 #   register [DIR]       Register a project in ~/.claude-harness/projects (default: cwd)
 #   watch [--status]     Check watch sources (default: show overdue)
-#   evolve [args...]     Self-improvement: check external sources + internal signals
+#   evolve               Self-improvement cycle (runs /harness/evolve script helper)
 #   update               Pull latest harness + global install + sync all projects
 #   version              Show claude-harness version (latest tag + commit)
 #   help                 Show this help
@@ -100,7 +100,9 @@ case "$CMD" in
     ;;
 
   evolve)
-    exec "$HARNESS_ROOT/scripts/evolve.sh" "$@"
+    # The full cycle is driven by the /harness/evolve slash command in Claude Code.
+    # This CLI path only exposes the internal-signal helper for debugging / manual use.
+    exec "$HARNESS_ROOT/scripts/evolve.sh" --phase internal
     ;;
 
   update)
